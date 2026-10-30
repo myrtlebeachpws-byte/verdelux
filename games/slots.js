@@ -21,7 +21,7 @@
   };
 
   App.register({
-    id: 'slots', name: 'Jewels A Million', tagline: '5 reels · 10 lines · Free Spins, Vault Pick & Jewel Wheel bonuses.',
+    id: 'slots', kind: 'slot', badge: 'HOT', name: 'Jewels A Million', tagline: '5 reels · 10 lines · Free Spins, Vault Pick & Jewel Wheel bonuses.',
     rtpShort: 'RTP ' + RTP + ' (exact)',
     art() { return `<div class="slot-art jam-art">${UI.sym('RUBY')}${UI.sym('BLACK')}${UI.sym('SAPH')}<span class="jam-logo">Jewels<br><b>A Million</b></span></div>`; },
     info() {
@@ -328,7 +328,7 @@
   }
 
   /* ---------- debug hook (prototype/testing only; virtual coins) ---------- */
-  window.JAM = {
+  if (/[?&]debug=1/.test(location.search)) window.JAM = {
     force(grid) { forced = grid; },
     grids: {
       normal: [['RUBY', 'SAPH', 'EMER'], ['RUBY', 'DIAM', 'SAPH'], ['RUBY', 'EMER', 'DIAM'], ['SAPH', 'EMER', 'RUBY'], ['DIAM', 'BLACK', 'SAPH']],

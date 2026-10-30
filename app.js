@@ -6,17 +6,21 @@
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const r2 = x => Math.round(x * 100) / 100;
-  const today = () => new Date().toISOString().slice(0, 10);
+  let clockOffset = 0; const now = () => Date.now() + clockOffset;
+  const localDay = t => { const d = new Date(t == null ? now() : t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const today = () => localDay();
 
   const defaults = () => ({
     gc: 10000, sc: 10, cur: 'GC', name: 'Player One', lastBonus: 0, streak: 0, ageOK: false,
     limits: { GC: 0, SC: 0, remindMin: 0 }, wagered: { day: today(), GC: 0, SC: 0 },
-    breakUntil: 0, betIdx: {}, reduceMotion: false, totals: { hands: 0, won: 0, lost: 0 }
+    breakUntil: 0, betIdx: {}, reduceMotion: false, totals: { hands: 0, won: 0, lost: 0 },
+    xp: 0, hourlyLast: 0, hourlySC: true, daily: { last: '', streak: 0 }, wheelDay: '', weeklyLast: 0, birthday: '', bdayYear: 0, tokens: 0
   });
   let state;
   function load() {
     try { state = Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { state = defaults(); }
     state.limits = Object.assign(defaults().limits, state.limits);
+    state.daily = Object.assign({ last: '', streak: 0 }, state.daily);
     if (!state.wagered || state.wagered.day !== today()) state.wagered = { day: today(), GC: 0, SC: 0 };
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ } }
@@ -41,7 +45,7 @@
       if (amount > this.bal(c) + 1e-9) return { ok: false, reason: 'Not enough ' + c + '.' };
       if (opts.track !== false && amount > this.limitRoom(c) + 1e-9) return { ok: false, reason: 'Daily wager limit reached (' + this.fmt(state.limits[c], c) + ' ' + c + '). Adjust it in Profile.' };
       this._set(c, this.bal(c) - amount);
-      if (opts.track !== false) state.wagered[c] = r2(state.wagered[c] + amount);
+      if (opts.track !== false) { state.wagered[c] = r2(state.wagered[c] + amount); if (window.Rewards) window.Rewards.addXP(amount, c); }
       state.totals.hands += opts.hand ? 1 : 0;
       save(); render(); return { ok: true };
     },
@@ -101,6 +105,8 @@
   let currentGame = null;
   const NAV = [
     { id: 'lobby', label: 'Lobby', href: '#/lobby', icon: '<path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>' },
+    { id: 'rewards', label: 'Rewards', href: '#/rewards', icon: '<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-7-4-7-1s5 1 7 1c2 0 7 2 7-1s-5-3-7 1"/>' },
+    { id: 'member', label: 'VIP', href: '#/member', icon: '<path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3l3 6 3-6M12 9v12"/>' },
     { id: 'redeem', label: 'Redeem', href: '#/redeem', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.2 1.3-2 3-2s3 .8 3 2-1.3 1.8-3 2-3 .8-3 2 1.3 2 3 2 3-.8 3-2"/>' },
     { id: 'profile', label: 'Profile', href: '#/profile', icon: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>' },
     { id: 'safe', label: 'Play Safe', href: '#/safe', icon: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>' }
@@ -108,10 +114,10 @@
   function buildNav() {
     const mk = (n, cls) => `<a class="${cls}" data-nav="${n.id}" href="${n.href}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${n.icon}</svg><span>${n.label}</span></a>`;
     $('.topnav').innerHTML = NAV.map(n => mk(n, 'navlink')).join('');
-    $('.bottomnav').innerHTML = NAV.map(n => mk(n, 'bnlink')).join('');
+    $('.bottomnav').innerHTML = NAV.filter(n => n.id !== 'redeem').map(n => mk(n, 'bnlink')).join('');
   }
   function show(id) {
-    ['welcome', 'lobby', 'game', 'redeem', 'profile'].forEach(v => { $('#view-' + v).hidden = v !== id; });
+    ['welcome', 'lobby', 'game', 'redeem', 'profile', 'rewards', 'member'].forEach(v => { $('#view-' + v).hidden = v !== id; });
     $('#shell').hidden = id === 'welcome';
   }
   function route() {
@@ -130,6 +136,8 @@
     if (name === 'lobby') { show('lobby'); renderLobby(); }
     else if (name === 'game' && games[arg]) { show('game'); renderGame(games[arg]); navId = 'lobby'; }
     else if (name === 'redeem') { show('redeem'); renderRedeem(); }
+    else if (name === 'rewards') { show('rewards'); window.Rewards.renderRewards($('#view-rewards')); }
+    else if (name === 'member') { show('member'); window.Rewards.renderMember($('#view-member')); }
     else if (name === 'profile' || name === 'safe') { show('profile'); renderProfile(name === 'safe'); }
     else { location.replace('#/lobby'); return; }
     $$('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === navId));
@@ -180,15 +188,26 @@
     btn.innerHTML = b.ready ? `<span class="gift"></span> Claim Daily Bonus <small>+${b.gc.toLocaleString()} GC · +${b.sc.toFixed(2)} SC</small>` : `<span class="gift"></span> Next bonus in <b>${fmtWait(b.wait)}</b>`;
     const dots = $('#streak'); if (dots) dots.innerHTML = Array.from({ length: 7 }, (_, i) => `<i class="${i < (b.ready ? (Date.now() - state.lastBonus > 2 * DAY ? 0 : state.streak) : state.streak) ? 'on' : ''}"></i>`).join('');
   }
+  function tileHTML(id) {
+    const g = games[id], rtp = g.rtp ? 'RTP ' + (g.rtp * 100).toFixed(2) + '%' : ({ poker: 'RTP 99.54%*', blackjack: 'Edge ≈0.5%*', holdem: 'vs AI · No rake', slots: 'RTP 96.17%', baccarat: 'Banker edge 1.06%' })[id];
+    const locked = g.vip && window.Rewards && !window.Rewards.unlocked(g.vip);
+    const badge = id === 'slots' ? 'HOT' : g.badge;
+    return `<a class="tile ${g.kind === 'slot' || id === 'slots' ? 'tile-slot' : ''} ${locked ? 'locked' : ''}" href="#/game/${id}" data-game="${id}">
+      ${badge ? `<span class="tile-badge b-${badge.toLowerCase()}">${badge}</span>` : ''}${locked ? `<span class="tile-lock">🔒 ${g.vip}</span>` : ''}
+      <div class="tile-art">${g.art()}</div>
+      <div class="tile-body"><h4>${g.name}</h4><p>${g.tagline}</p>
+      <div class="tile-foot"><span class="chip-rtp">${rtp}</span><span class="play">${locked ? 'VIP' : 'Play'} ›</span></div></div></a>`;
+  }
   function renderLobby() {
     const root = $('#view-lobby');
-    const rtpBadge = { poker: 'RTP 99.54%*', blackjack: 'Edge ≈0.5%*', holdem: 'vs AI · No rake', slots: 'RTP 96.17%', baccarat: 'Banker edge 1.06%' };
+    const slotIds = gameOrder.filter(id => id === 'slots' || games[id].kind === 'slot');
+    const tableIds = gameOrder.filter(id => !slotIds.includes(id));
     root.innerHTML = `
       <div class="hero">
         <div class="hero-text">
           <div class="eyebrow">Welcome back</div>
           <h2>${escapeHtml(state.name)}</h2>
-          <p>Pick a table, spin the reels, or grab your free daily coins.</p>
+          <div id="lobby-member"></div>
         </div>
         <div class="wallet-card">
           <div class="wc-row">
@@ -200,23 +219,18 @@
             <button class="lobby-cur" data-cur="GC">Gold Coins</button>
             <button class="lobby-cur" data-cur="SC">Sweeps Coins</button>
           </div>
-          <button id="btn-bonus" class="btn btn-gold btn-bonus"></button>
-          <div class="streak" id="streak" title="Daily streak"></div>
         </div>
       </div>
-      <div class="section-title"><h3>Games</h3><span class="muted">All games use virtual coins · tap <b>i</b> in any game for RTP / house edge</span></div>
-      <div class="tiles">
-        ${gameOrder.map(id => { const g = games[id]; return `<a class="tile" href="#/game/${id}" data-game="${id}">
-          <div class="tile-art">${g.art()}</div>
-          <div class="tile-body"><h4>${g.name}</h4><p>${g.tagline}</p>
-          <div class="tile-foot"><span class="chip-rtp">${rtpBadge[id]}</span><span class="play">Play ›</span></div></div></a>`; }).join('')}
-      </div>
+      <div id="lobby-rewards"></div>
+      <div class="section-title"><h3>Slots</h3><span class="muted">${slotIds.length} themed slots · exact RTP in every info panel</span></div>
+      <div class="tiles slot-tiles">${slotIds.map(tileHTML).join('')}</div>
+      <div class="section-title"><h3>Table Games</h3><span class="muted">tap <b>i</b> in any game for RTP / house edge</span></div>
+      <div class="tiles">${tableIds.map(tileHTML).join('')}</div>
+      <div id="lobby-limits"></div>
       <p class="fine center">* RTP shown for optimal strategy where applicable; approximate for table games. Virtual coins only — no cash value in this demo.</p>
       <div class="notice-bar"><b>21+</b> (18+ where permitted). Play for entertainment. Help: <a href="tel:18004262537">1-800-GAMBLER</a> · <a href="#/safe">Set limits</a></div>`;
     $$('.lobby-cur', root).forEach(b => b.onclick = () => setCurrency(b.dataset.cur));
-    $('#btn-bonus').onclick = claimBonus;
-    updateBonusBtn();
-    const iv = setInterval(updateBonusBtn, 1000); viewDisposers.push(() => clearInterval(iv));
+    if (window.Rewards) window.Rewards.mountLobby(root, viewDisposers);
     on('cur', render);
   }
 
@@ -325,10 +339,12 @@
     $$('.cur-btn').forEach(b => b.onclick = () => setCurrency(b.dataset.cur));
     window.addEventListener('hashchange', route);
     startReminder();
+    if (window.Rewards) window.Rewards.start();
     // Test/screenshot helper: ?seed=1 enables a pre-confirmed age gate
     if (/[?&]age=1/.test(location.search) && !state.ageOK) { state.ageOK = true; save(); }
     route();
   }
 
-  window.App = { start, wallet, on, emit, toast, modal, register, setBusy, setCurrency, get state() { return state; }, save, render, games, escapeHtml };
+  window.App = { start, wallet, on, emit, toast, modal, register, setBusy, setCurrency, get state() { return state; }, save, render, games, gameOrder, escapeHtml, now, localDay, route,
+    _setClock(ms) { if (/[?&]debug=1/.test(location.search)) clockOffset = ms; } };
 })();

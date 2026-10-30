@@ -26,8 +26,8 @@
       <div class="brand-sub">SOCIAL CASINO</div>
       <p class="tagline">Classic card games &amp; slots, dressed in emerald.<br>Play for fun with virtual Gold&nbsp;Coins and Sweeps&nbsp;Coins.</p>
       <ul class="welcome-perks">
-        <li><b>5</b> table &amp; reel games</li>
-        <li><b>Free</b> daily bonus</li>
+        <li><b>11</b> tables &amp; slots</li>
+        <li><b>Free</b> coins every 30 min</li>
         <li><b>0</b> real money</li>
       </ul>
       <label class="age-check"><input type="checkbox" id="age-ok"> <span>I am <b>21 or older</b> (18+ where local law permits) and I understand this is a demo with virtual currency only.</span></label>
@@ -53,6 +53,8 @@
       <section id="view-game" class="view" hidden></section>
       <section id="view-redeem" class="view" hidden></section>
       <section id="view-profile" class="view" hidden></section>
+      <section id="view-rewards" class="view" hidden></section>
+      <section id="view-member" class="view" hidden></section>
     </main>
     <nav class="bottomnav" aria-label="Primary mobile"></nav>
   </div>
@@ -63,11 +65,15 @@
 </div>
 <script src="core.js"></script>
 <script src="app.js"></script>
+<script src="rewards.js"></script>
 <script src="games/shared.js"></script>
 <script src="games/poker.js"></script>
 <script src="games/blackjack.js"></script>
 <script src="games/holdem.js"></script>
 <script src="games/slots.js"></script>
+<script src="games/slotmath.js"></script>
+<script src="games/slotart.js"></script>
+<script src="games/reels.js"></script>
 <script src="games/baccarat.js"></script>
 <script>App.start();</script>
 <script>if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW registration failed', e); }); });</script>

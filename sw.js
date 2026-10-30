@@ -1,22 +1,26 @@
-const CACHE = 'verdelux-v2-jam';
+const CACHE = 'verdelux-v3-slots';
 const ASSETS = [
- "./app.js",
- "./apple-touch-icon.png",
- "./core.js",
- "./games/baccarat.js",
- "./games/blackjack.js",
- "./games/holdem.js",
- "./games/poker.js",
- "./games/shared.js",
- "./games/slots.js",
- "./icons/apple-touch-icon.png",
- "./icons/favicon-32.png",
- "./icons/icon-192.png",
- "./icons/icon-512.png",
- "./icons/maskable-512.png",
- "./index.html",
- "./manifest.json",
- "./styles.css"
+  './app.js',
+  './apple-touch-icon.png',
+  './core.js',
+  './games/baccarat.js',
+  './games/blackjack.js',
+  './games/holdem.js',
+  './games/poker.js',
+  './games/reels.js',
+  './games/shared.js',
+  './games/slotart.js',
+  './games/slotmath.js',
+  './games/slots.js',
+  './icons/apple-touch-icon.png',
+  './icons/favicon-32.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/maskable-512.png',
+  './index.html',
+  './manifest.json',
+  './rewards.js',
+  './styles.css'
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.concat(['./']))).then(() => self.skipWaiting()));
